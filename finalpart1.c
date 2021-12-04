@@ -149,21 +149,6 @@ char **lsh_split_line(char *line)
 	return tokens;
 }
 
-/**
- * @brief Free null-terminated array of strings.
- * @param args List to free;
- */
-void lsh_free_args(char **args)
-{
-	char **iter = args;
-	while (*iter != NULL) {
-		free(*iter);
-		iter++;
-	}
-
-	free(args);
-}
-
 #define LSH_RL_BUFSIZE 1024
 char *lsh_read_line(void)
 {
@@ -231,7 +216,7 @@ void lsh_loop(void)
 		status = lsh_execute(args);
 
 		free(line);
-		lsh_free_args(args);
+		free(args);
 	} while (status);
 }
 
