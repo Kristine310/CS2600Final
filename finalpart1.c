@@ -9,24 +9,6 @@
 #include<string.h>
 // strcmp(), strtok()
 
-int lsh_execute(char **args)
-{
-	int i;
-
-	if (args[0] == NULL) {
-		// An empty command was entered.
-		return 1;
-	}
-
-	for (i = 0; i < lsh_num_builtins(); i++) {
-		if (strcmp(args[0], builtin_str[i]) == 0) {
-			return (*builtin_func[i])(args);
-		}
-	}
-
-	return lsh_launch(args);
-}
-
 /*
  Function Declarations for builtin shell commands:
 */
@@ -86,6 +68,24 @@ int lsh_help(char **args)
 int lsh_exit(char **args)
 {
 	return 0;
+}
+
+int lsh_execute(char **args)
+{
+	int i;
+
+	if (args[0] == NULL) {
+		// An empty command was entered.
+		return 1;
+	}
+
+	for (i = 0; i < lsh_num_builtins(); i++) {
+		if (strcmp(args[0], builtin_str[i]) == 0) {
+			return (*builtin_func[i])(args);
+		}
+	}
+
+	return lsh_launch(args);
 }
 
 int lsh_launch(char **args)
@@ -167,6 +167,21 @@ void lsh_free_args(char **args)
 #define LSH_RL_BUFSIZE 1024
 char *lsh_read_line(void)
 {
+	char *line = NULL;
+	ssize_t bufsize = 0; // have getline allocate a buffer for us
+
+	if (getline(&line, &bufsize, stdin) == -1){
+		if (feof(stdin)) {
+			exit(EXIT_SUCCESS);  // We recieved an EOF
+		} else {
+			perror("readline");
+			exit(EXIT_FAILURE);
+		}
+	}
+	return line;
+	
+	/* Alternate implementation to code above
+
 	int bufsize = LSH_RL_BUFSIZE;
 	int position = 0;
 	char *buffer = malloc(sizeof(char) * bufsize);
@@ -200,20 +215,7 @@ char *lsh_read_line(void)
 			}
 		}
 	}
-
-	char *line = NULL;
-	ssize_t bufsize = 0; // have getline allocate a buffer for us
-
-	if (getline(&line, &bufsize, stdin) == -1){
-		if (feof(stdin)) {
-			exit(EXIT_SUCCESS);  // We recieved an EOF
-		} else {
-			perror("readline");
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	return line;
+	*/
 }
 
 void lsh_loop(void)
