@@ -1,3 +1,14 @@
+#include<sys/wait.h>
+// waipid() and associated macros
+#include<unistd.h>
+// chdir(), fork(), exec(), pid_t
+#include<stdlib.h>
+// malloc(), realloc(), free(), exit(), execvp(), EXIT_SUCCESS, EXIT_FAILURE
+#include<stdio.h>
+// fprintf(), printf(), stderr, getchar(), perror()
+#include<string.h>
+// strcmp(), strtok()
+
 int main(int argc, char **argv)
 {
 	// Load config files, if any.
