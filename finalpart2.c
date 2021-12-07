@@ -329,6 +329,11 @@ void editorUpdateSyntax(erow *row) {
 		prev_sep = is_separator(c);
 		i++;
 	}
+
+	int changed = (row->hl_open_comment != in_comment);
+	row->hl_open_comment= in_comment;
+	if (changed && row->idx + 1 < E.numrows)
+		editorUpdateSyntax(&E.row[row->idx + 1]);
 }
 
 int editorSyntaxToColor(int hl) {
@@ -398,7 +403,7 @@ int editorRowRxToCx(erow *row, int rx) {
 void editorUpdateRow(erow *row) {
 	int tabs = 0;
 	int j;
-	for (j = 0; j< row->size; j++)
+	for (j = 0; j < row->size; j++)
 		if (row->chars[j] == '\t') tabs++;
 	
 	free(row->render);
@@ -419,7 +424,7 @@ void editorUpdateRow(erow *row) {
 	editorUpdateSyntax(row);
 }
 
-void editorInsertRow(int at , char *s, size_t len) {
+void editorInsertRow(int at, char *s, size_t len) {
 	if (at < 0 || at > E.numrows) return;
 
 	E.row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
@@ -478,7 +483,7 @@ void editorRowAppendString(erow *row, char *s, size_t len) {
 }
 
 void editorRowDelChar(erow *row, int at) {
-	if (at < 0 || at >=row->size) return;
+	if (at < 0 || at >= row->size) return;
 	memmove(&row->chars[at], &row->chars[at + 1], row->size - at);
 	row->size--;
 	editorUpdateRow(row);
@@ -535,7 +540,7 @@ char *editorRowsToString(int *buflen) {
 
 	char *buf = malloc(totlen);
 	char *p = buf;
-	for(j = 0; j < E.numrows; j++) {
+	for (j = 0; j < E.numrows; j++) {
 		memcpy(p, E.row[j].chars, E.row[j].size);
 		p += E.row[j].size;
 		*p = '\n';
@@ -557,9 +562,8 @@ void editorOpen(char *filename) {
 	char *line = NULL;
 	size_t linecap = 0;
 	ssize_t linelen;
-	linelen = getline(&line, &linecap, fp);
 	while ((linelen = getline(&line, &linecap, fp)) != -1) {
-		while (linelen > 0 && (line[linelen - 1] == '\n' | line[linelen - 1] == '\r')) linelen--;
+		while (linelen > 0 && (line[linelen - 1] == '\n' || line[linelen - 1] == '\r')) linelen--;
 		editorInsertRow(E.numrows, line, linelen);
 	}
 	free(line);
@@ -585,7 +589,7 @@ void editorSave() {
 		if (ftruncate(fd, len) != -1) {
 			if (write(fd, buf, len) == len) {
 				close(fd);
-				free(fd);
+				free(buf);
 				E.dirty = 0;
 				editorSetStatusMessage("%d bytes written to disk", len);
 				return;
@@ -657,7 +661,6 @@ void editorFind() {
 	int saved_rowoff = E.rowoff;
 	
 	char *query = editorPrompt("Search: %s (Use ESC/Arrows/Enter)", editorFindCallback);
-	if (query == NULL) return;
 
 	if (query) {
 		free(query);
@@ -777,7 +780,7 @@ void editorDrawRows(struct abuf *ab) {
 void editorDrawStatusBar(struct abuf *ab) {
 	abAppend(ab, "\x1b[7m", 4);
 	char status[80], rstatus[80];
-	int len = snprintf(status, sizeof(status), "%.20s - %d lines", E.filename ? E.filename : "[No Name]", E.numrows, E.dirty ? "(modified)" : "");
+	int len = snprintf(status, sizeof(status), "%.20s - %d lines %s", E.filename ? E.filename : "[No Name]", E.numrows, E.dirty ? "(modified)" : "");
 	int rlen = snprintf(rstatus, sizeof(rstatus), "%s | %d/%d", E.syntax ? E.syntax->filetype : "no ft", E.cy + 1, E.numrows);
 	if (len > E.screencols) len = E.screencols;
 	abAppend(ab, status, len);
@@ -791,7 +794,7 @@ void editorDrawStatusBar(struct abuf *ab) {
 		}
 	}
 	abAppend(ab, "\x1b[m", 3);
-	abAppend(ab, '\r\n', 2);
+	abAppend(ab, "\r\n", 2);
 }
 
 void editorDrawMessageBar(struct abuf *ab) {
@@ -897,8 +900,8 @@ void editorMoveCursor(int key) {
 			}
 			break;
 		case ARROW_DOWN:
-			if (E.cy != E.numrows) {
-				E.cx++;
+			if (E.cy < E.numrows) {
+				E.cy++;
 			}
 			break;
 	}
@@ -921,7 +924,7 @@ void editorProcessKeypress() {
 			break;
 		case CTRL_KEY('q'):
 			if (E.dirty && quit_times > 0) {
-				editorSetStatusMessage("WARNING!!! File has unsaved changes. " "Press Ctrl-Q %d more tiems to quit.", quit_times);
+				editorSetStatusMessage("WARNING!!! File has unsaved changes. Press Ctrl-Q %d more times to quit.", quit_times);
 				quit_times--;
 				return;
 			}
